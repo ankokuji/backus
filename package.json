@@ -1,0 +1,7 @@
+{
+  "name": "js-parser",
+  "description": "ECMAScript parser by Bison/YACC grammer",
+  "dependencies": {
+    "jison": "^0.4.18"
+  }
+}
