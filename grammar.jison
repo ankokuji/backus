@@ -4,7 +4,7 @@
 \s+                                             /* skip whitespace */
 [0-9]+(\.[0-9]+)?\b                             return 'NUMBER'
 "var"|"const"|"let"\b                           return 'TYPE'
-[a-z]\w*                                        return 'IDENTIFIER'
+"function"                                      return 'FUNCTION'
 "="                                             return 'EQUAL'
 "<"                                             return 'LT'
 ">"                                             return 'GT'
@@ -13,11 +13,13 @@
 "/"                                             return 'OVER'
 "-"                                             return 'MINUS'
 "+"                                             return 'PLUS'
+"{"                                             return 'LBRACE'
+"}"                                             return 'RBRACE'
 "("                                             return 'LPAREN'
 ")"                                             return 'RPAREN'
 ","                                             return 'COMMA'
 ";"|\n                                          return 'LINE_SEP'
-"function"                                      return 'FUNCTION'
+[a-z]\w*                                        return 'IDENTIFIER'
 <<EOF>>                                         return 'EOF'
 .                                               return 'INVALID'
 
@@ -36,16 +38,15 @@ program
     ;
 
 stmt-seq
-    : stmt-seq statement
-        { $$ = [...$1, $2] }
-    | statement
-        { $$ = [$1] } 
+    : stmt-seq stmt
+    | stmt
     ;
-
-statement
+    
+stmt
     : decl-stmt stmt-sep
         { $$ = $1 }
     | expr stmt-sep
+    | block
     ;
 
 expr
@@ -75,11 +76,22 @@ factor
     | LPAREN expr RPAREN
         { $$ = $1 }
     | call-expr
+    | func-expr-stmt-start
     ;
 
-// func-expr
-//     : FUNCTION 
-//     ;
+func-expr-stmt-start
+    : LPAREN FUNCTION identifier func-params block RPAREN
+        { $$ = yy.createNode("FunctionExpression"); $$.id = $2; $$.params = $3; $$.body = $4; }
+    | LPAREN FUNCTION func-params block RPAREN
+        { $$ = yy.createNode("FunctionExpression"); $$.params = $2; $$.body = $3; }
+    ;
+
+func-params
+    : LPAREN param-list RPAREN
+        { $$ = $2; }
+    | LPAREN RPAREN
+        { $$ = []; }
+    ;
 
 call-expr
     : factor LPAREN arg-list RPAREN
@@ -92,6 +104,22 @@ arg-list
     | expr
         { $$ = [$1]}
     ; 
+
+param-list
+    : param-list COMMA identifier
+        { $$ = [...$1, $3]}
+    | identifier
+        { $$ = [$1];}
+    | error
+        { $$ = [];}
+    ;
+
+block
+    : LBRACE stmt-seq RBRACE
+        { $$ = yy.createNode("Block"); $$.body = $2}
+    | LBRACE RBRACE
+        { $$ = yy.createNode("Block"); $$.body = []}
+    ;
 
 decl-stmt 
     : TYPE var-list
