@@ -42,6 +42,10 @@ stmt-seq
     | stmt
     ;
     
+// Ambigious grammar in javascript such as Function declaration and Function expression.
+// For the Function expression in the head of a statement should be rounded by 
+// parenthesis but needn't be when in subsequece of a expression.
+// This is because javascript is not a context-free grammar language.
 stmt
     : decl-stmt stmt-sep
         { $$ = $1 }
